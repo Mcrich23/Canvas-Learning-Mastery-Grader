@@ -1,32 +1,115 @@
 import requests
 import os
 from dotenv import load_dotenv, set_key
+from flask import Flask, request
+from werkzeug.serving import make_server
+import threading
+import time
+
+import requests
 
 load_dotenv()
 
-# Replace these placeholders with your Canvas API details
 CANVAS_API_URL = os.getenv("CANVAS_API_URL")
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
 API_TOKEN = os.getenv("API_TOKEN")
 
+app = Flask(__name__)
+
+# Flag to signal when the OAuth callback has happened
+callback_done = False
+server = None
+
+
+@app.route("/oauth/callback")
+def oauth_callback():
+    global callback_done, API_TOKEN, REFRESH_TOKEN
+    auth_code = request.args.get("code")
+
+    if auth_code:
+        token_url = f"{CANVAS_API_URL}/login/oauth2/token"
+
+        response = requests.post(
+            token_url,
+            data={
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "code": auth_code,
+                "grant_type": "authorization_code",
+                "redirect_uri": "http://127.0.0.1:5005/oauth/callback",
+            },
+        )
+
+        if response.status_code == 200:
+            new_token = response.json().get("access_token")
+            refresh_token = response.json().get("refresh_token")
+
+            # Update the access token in the environment variables or configuration
+            API_TOKEN = new_token
+            REFRESH_TOKEN = refresh_token
+
+            # Update the live env
+            os.environ["API_TOKEN"] = new_token
+            os.environ["REFRESH_TOKEN"] = refresh_token
+
+            # Update the .env file
+            set_key('.env', 'API_TOKEN', new_token)
+            set_key('.env', 'REFRESH_TOKEN', refresh_token)
+
+            print("Access token refreshed successfully.")
+            callback_done = True  # Set the flag to True when callback is done
+            return "Access token refreshed successfully. You can close this window now."
+
+    return "Failed to refresh access token. Check your logs for details."
+
+def run_flask_server():
+    global server
+    server = make_server('localhost', 5005, app)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        # Handle the keyboard interrupt (Ctrl+C)
+        server.shutdown()
+
+def stop_flask_server():
+    global server
+    if server:
+        server.shutdown()
+
 def refresh_access_token():
-    global API_TOKEN  # Declare that you want to modify the global variable
+    global API_TOKEN, callback_done
 
     auth_url = f"{CANVAS_API_URL}/login/oauth2/auth"
     token_url = f"{CANVAS_API_URL}/login/oauth2/token"
 
-    # Make a request to refresh the access token
-    response = requests.post(
-        token_url,
-        data={
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "refresh_token": REFRESH_TOKEN,
-            "grant_type": "refresh_token"
-        }
-    )
+    # If refresh token is not available, perform the full OAuth2 flow
+    if REFRESH_TOKEN is None or REFRESH_TOKEN == "" or REFRESH_TOKEN == "<REFRESH_TOKEN>":
+        auth_code_url = f"{auth_url}?client_id={CLIENT_ID}&response_type=code&redirect_uri=http://127.0.0.1:5005/oauth/callback"
+        print(f"Open the following URL in your browser to continue authorization:\n{auth_code_url}")
+
+        # Start the Flask server in a separate thread
+        threading.Thread(target=run_flask_server).start()
+
+        # Wait until the callback is done
+        while not callback_done:
+            pass
+
+        stop_flask_server()
+        return API_TOKEN
+        # return None
+    else:
+        # Use the refresh token to obtain a new access token
+        response = requests.post(
+            token_url,
+            data={
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "refresh_token": REFRESH_TOKEN,
+                "grant_type": "refresh_token"
+            }
+        )
 
     if response.status_code == 200:
         # Update the access token in the environment variables or configuration
@@ -96,10 +179,15 @@ def main():
     # Get all courses in the account
     courses = get_all_courses()
     if 'errors' in courses and courses['errors'] is not None:
-        new_token = refresh_access_token()
-        if new_token is not None:
-            main()
-            return
+        if courses['errors'][0]['message'] == 'Invalid access token.' or courses['errors'][0]['message'] == 'user authorization required':
+            new_token = refresh_access_token()
+            if new_token is not None:
+                print('Running fetch again...\n')
+                main()
+                return
+            else:
+                print(f'courses returned with errors:\n\n{courses["errors"]}\n')
+                return
         else:
             print(f'courses returned with errors:\n\n{courses["errors"]}\n')
             return
