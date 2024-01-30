@@ -166,7 +166,7 @@ def get_learning_mastery_outcome(course_id, outcome_group_id):
     response = session.get(url)
     learning_mastery = response.json()
     # print(f'Learning Mastery for group {outcome_group_id}: {learning_mastery}')
-    outcome_ids = [outcome['outcome']['id']+1 for outcome in learning_mastery]
+    outcome_ids = [outcome['outcome']['id'] for outcome in learning_mastery]
     return outcome_ids
 
 # Function to get learning mastery scores for an assignment
@@ -298,6 +298,7 @@ def main():
 
         # get allowed list of outcomes
         learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
+        learning_mastery_id_list = [str(outcome_id) for outcome_id in learning_mastery_id_list]
         if assignment is not None:
             # You can customize the assignment ID based on your needs
             ASSIGNMENT_ID = assignment['id']
@@ -310,24 +311,25 @@ def main():
                 # # Get learning mastery scores for the assignment
                 all_learning_mastery = get_learning_mastery(course_id, user_id)['outcome_results']
                 # Filter learning_mastery to only include objects with IDs in learning_mastery_id_list
-                learning_mastery = [outcome for outcome in all_learning_mastery if outcome['id'] in learning_mastery_id_list]
+                learning_mastery = [outcome for outcome in all_learning_mastery if outcome['links']['learning_outcome'] in learning_mastery_id_list]
+                if len(learning_mastery) == 0:
+                    print(f'No learning mastery for {user_name} in course {course_name}')
+                else:
+                    average_percent = calculate_average_percent(learning_mastery)
 
-                average_percent = calculate_average_percent(learning_mastery)
-                print(f'{user_name}\'s learning mastery average percent: {average_percent}')
-
-                if average_percent is not None:
-                    final_grade = average_percent*4
-                    current_grade = get_grade(course_id, ASSIGNMENT_ID, user_id)
-                    if current_grade is not None and f'{current_grade}' == f'{final_grade}':
-                        print(f"Grade already up to date for {user_name} in course {course_name}")
-                    else:
-                        updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, final_grade)
-
-                        if updated_grade == 200:
-                            print(f"Grade updated for {user_name} in course {course_name}")
+                    if average_percent is not None:
+                        final_grade = average_percent*4
+                        current_grade = get_grade(course_id, ASSIGNMENT_ID, user_id)
+                        if current_grade is not None and f'{current_grade}' == f'{final_grade}':
+                            print(f"Grade already up to date for {user_name} in course {course_name}")
                         else:
-                            print(f"Failed to update grade for {user_name} in course {course_name}")
-                print('')
+                            updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, final_grade)
+
+                            if updated_grade == 200:
+                                print(f"Grade updated for {user_name} in course {course_name}")
+                            else:
+                                print(f"Failed to update grade for {user_name} in course {course_name}")
+                    print('')
         else:
             print(f"Assignment not found in course {course_name}")
 
