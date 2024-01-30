@@ -21,7 +21,7 @@ app = Flask(__name__)
 # Flag to signal when the OAuth callback has happened
 callback_done = False
 server = None
-
+session = requests.Session()
 
 @app.route("/oauth/callback")
 def oauth_callback():
@@ -131,8 +131,7 @@ def refresh_access_token():
 # Function to get all courses in the account
 def get_all_courses():
     url = f"{CANVAS_API_URL}/api/v1/courses"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
-    response = requests.get(url, headers=headers)
+    response = session.get(url)
     courses = response.json()
     # print(courses)
     return courses
@@ -140,32 +139,28 @@ def get_all_courses():
 # Function to get all students in a course
 def get_students(course_id):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/students"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
-    response = requests.get(url, headers=headers)
+    response = session.get(url)
     students = response.json()
     return students
 
 # Function to get learning mastery scores for an assignment
 def get_learning_mastery(course_id, assignment_id):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/learning_mastery"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
-    response = requests.get(url, headers=headers)
+    response = session.get(url)
     learning_mastery = response.json()
     return learning_mastery
 
 # Function to set grades for an assignment
 def set_grades(course_id, assignment_id, grades):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/update_grades"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
     payload = {"grade_data": grades}
-    response = requests.post(url, headers=headers, json=payload)
+    response = session.post(url, json=payload)
     return response.status_code
 
 # Function to get assignment ID by name
 def get_assignment_id_by_name(course_id, assignment_name):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments"
-    headers = {"Authorization": f"Bearer {API_TOKEN}"}
-    response = requests.get(url, headers=headers)
+    response = session.get(url)
     assignments = response.json()
 
     for assignment in assignments:
@@ -176,6 +171,7 @@ def get_assignment_id_by_name(course_id, assignment_name):
 
 # Main script
 def main():
+    session.headers = {"Authorization": f"Bearer {API_TOKEN}"}
     # Get all courses in the account
     courses = get_all_courses()
     if 'errors' in courses and courses['errors'] is not None:
