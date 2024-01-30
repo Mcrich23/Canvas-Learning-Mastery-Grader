@@ -144,29 +144,38 @@ def get_students(course_id):
     return students
 
 # Function to get learning mastery scores for an assignment
-def get_learning_mastery(course_id, assignment_id):
-    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/learning_mastery"
+def get_learning_mastery(course_id, student_id):
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_results?user_ids={student_id}"
     response = session.get(url)
     learning_mastery = response.json()
     return learning_mastery
 
 # Function to set grades for an assignment
-def set_grades(course_id, assignment_id, grades):
-    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/update_grades"
-    payload = {"grade_data": grades}
-    response = session.post(url, json=payload)
+def set_grade(course_id, assignment_id, student_id, grade):
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/{student_id}?submission[posted_grade]={grade}"
+    response = session.put(url)
     return response.status_code
 
 # Function to get assignment ID by name
-def get_assignment_id_by_name(course_id, assignment_name):
+def get_assignment_by_name(course_id, assignment_name):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments"
     response = session.get(url)
     assignments = response.json()
 
     for assignment in assignments:
         if assignment["name"] == assignment_name:
-            return assignment["id"]
+            return assignment
 
+    return None
+
+# Function to calculate the average of 'percent' values in learning mastery results
+def calculate_average_percent(learning_mastery):
+    if 'outcome_results' in learning_mastery:
+        results = learning_mastery['outcome_results']
+        if results:
+            percent_values = [result['percent'] for result in results]
+            average_percent = sum(percent_values) / len(percent_values)
+            return average_percent
     return None
 
 # Main script
@@ -196,37 +205,33 @@ def main():
         # Get students in the course
         students = get_students(course_id)
 
+        assignment = get_assignment_by_name(course_id, "Test")
         # You can customize the assignment ID based on your needs
-        ASSIGNMENT_ID = get_assignment_id_by_name(course_id, "Test")
+        ASSIGNMENT_ID = assignment['id']
         if ASSIGNMENT_ID is not None:
-            print(ASSIGNMENT_ID)
-
-            # # Get learning mastery scores for the assignment
-            # learning_mastery = get_learning_mastery(course_id, ASSIGNMENT_ID)
+            # print(ASSIGNMENT_ID)
 
             # # Calculate and set grades for the assignment
-            # grades = {}
-            # for student in students:
-            #     user_id = student["id"]
-            #     user_name = student["name"]
-            #     user_scores = learning_mastery.get(str(user_id), {}).get("scores", [])
+            for student in students:
+                # print(student)
+                user_id = student["id"]
+                user_name = student["name"]
 
-            #     # Calculate average (you may customize this calculation based on your needs)
-            #     average_score = sum(user_scores) / len(user_scores) if user_scores else 0
+                # # Get learning mastery scores for the assignment
+                learning_mastery = get_learning_mastery(course_id, user_id)
 
-            #     # Scale the average score to the 0-4 range
-            #     scaled_grade = min(max(average_score * 4, 0), 4)
+                # print(learning_mastery)
+                average_percent = calculate_average_percent(learning_mastery)
+                print(f'{user_name}\'s learning mastery average percent: {average_percent}')
 
-            #     # Add the scaled grade to the grades dictionary
-            #     grades[user_id] = {"posted_grade": scaled_grade, "text_comment": f"Graded by script for {user_name}"}
+                if average_percent is not None:
+                    final_grade = average_percent*4
+                    updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, final_grade)
 
-            # # Set the calculated grades for the assignment
-            # status_code = set_grades(course_id, ASSIGNMENT_ID, grades)
-
-            # if status_code == 200:
-            #     print("Grades updated successfully.")
-            # else:
-            #     print(f"Failed to update grades for course {course_name}. Status code: {status_code}")
+                    if updated_grade == 200:
+                        print(f"Grade updated for {user_name} in course {course_name}")
+                    else:
+                        print(f"Failed to update grade for {user_name} in course {course_name}")
         else:
             print(f"Assignment not found in course {course_name}")
 
