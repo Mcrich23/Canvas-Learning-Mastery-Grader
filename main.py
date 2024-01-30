@@ -101,7 +101,6 @@ def refresh_access_token():
     token_url = f"{CANVAS_API_URL}/login/oauth2/token"
     
     # If refresh token is not available, perform the full OAuth2 flow
-    print(f'REFRESH_TOKEN: {REFRESH_TOKEN}')
     if REFRESH_TOKEN is None or REFRESH_TOKEN == "" or REFRESH_TOKEN == "<REFRESH_TOKEN>":
         scope_string = " ".join(scopes)
         scope_encoded = urllib.parse.quote(scope_string)
