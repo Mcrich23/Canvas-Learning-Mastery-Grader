@@ -1,10 +1,49 @@
 import requests
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
+
+load_dotenv()
 
 # Replace these placeholders with your Canvas API details
 CANVAS_API_URL = os.getenv("CANVAS_API_URL")
-API_TOKEN = os.getenv("CANVAS_API_KEY")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
+API_TOKEN = os.getenv("API_TOKEN")
+
+def refresh_access_token():
+    global API_TOKEN  # Declare that you want to modify the global variable
+
+    auth_url = f"{CANVAS_API_URL}/login/oauth2/auth"
+    token_url = f"{CANVAS_API_URL}/login/oauth2/token"
+
+    # Make a request to refresh the access token
+    response = requests.post(
+        token_url,
+        data={
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "refresh_token": REFRESH_TOKEN,
+            "grant_type": "refresh_token"
+        }
+    )
+
+    if response.status_code == 200:
+        # Update the access token in the environment variables or configuration
+        new_token = response.json().get("access_token")
+        API_TOKEN = new_token
+
+        # Update the live env
+        os.environ["API_TOKEN"] = new_token
+
+        # Update the .env file
+        set_key('.env', 'API_TOKEN', new_token)
+
+        print("Access token refreshed successfully.")
+        return new_token
+    else:
+        print(f"Failed to refresh access token. Status code: {response.status_code}")
+        return None
 
 # Function to get all courses in the account
 def get_all_courses():
@@ -56,6 +95,14 @@ def get_assignment_id_by_name(course_id, assignment_name):
 def main():
     # Get all courses in the account
     courses = get_all_courses()
+    if 'errors' in courses and courses['errors'] is not None:
+        new_token = refresh_access_token()
+        if new_token is not None:
+            main()
+            return
+        else:
+            print(f'courses returned with errors:\n\n{courses["errors"]}\n')
+            return
 
     for course in courses:
         course_id = course["id"]
