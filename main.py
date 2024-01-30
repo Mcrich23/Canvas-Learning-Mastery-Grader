@@ -23,6 +23,18 @@ callback_done = False
 server = None
 session = requests.Session()
 
+scopes = [
+    "url:GET|/api/v1/courses/:course_id/assignments",
+    "url:GET|/api/v1/courses",
+    "url:GET|/api/v1/courses/:course_id/students",
+    "url:GET|/api/v1/courses/:course_id/grading_periods",
+    "url:GET|/api/v1/accounts/:account_id/outcome_groups/:id/outcomes",
+    "url:GET|/api/v1/accounts/:account_id/outcome_groups/:id/subgroups",
+    "url:GET|/api/v1/courses/:course_id/outcome_groups",
+    "url:GET|/api/v1/courses/:course_id/outcome_results",
+    "url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id"
+]
+
 @app.route("/oauth/callback")
 def oauth_callback():
     global callback_done, API_TOKEN, REFRESH_TOKEN
@@ -31,6 +43,7 @@ def oauth_callback():
     if auth_code:
         token_url = f"{CANVAS_API_URL}/login/oauth2/token"
 
+        scope_string = " ".join(scopes)
         response = requests.post(
             token_url,
             data={
@@ -39,6 +52,7 @@ def oauth_callback():
                 "code": auth_code,
                 "grant_type": "authorization_code",
                 "redirect_uri": "http://127.0.0.1:5005/oauth/callback",
+                "scope": scope_string,
             },
         )
 
@@ -84,7 +98,11 @@ def refresh_access_token():
     auth_url = f"{CANVAS_API_URL}/login/oauth2/auth"
     token_url = f"{CANVAS_API_URL}/login/oauth2/token"
 
+    scope_string = " ".join(scopes)
+    print(f"Scope string: {scope_string}")
+    
     # If refresh token is not available, perform the full OAuth2 flow
+    print(f'REFRESH_TOKEN: {REFRESH_TOKEN}')
     if REFRESH_TOKEN is None or REFRESH_TOKEN == "" or REFRESH_TOKEN == "<REFRESH_TOKEN>":
         auth_code_url = f"{auth_url}?client_id={CLIENT_ID}&response_type=code&redirect_uri=http://127.0.0.1:5005/oauth/callback"
         print(f"Open the following URL in your browser to continue authorization:\n{auth_code_url}")
@@ -107,7 +125,8 @@ def refresh_access_token():
                 "client_id": CLIENT_ID,
                 "client_secret": CLIENT_SECRET,
                 "refresh_token": REFRESH_TOKEN,
-                "grant_type": "refresh_token"
+                "grant_type": "refresh_token",
+                "scope": " ".join(scopes),
             }
         )
 
@@ -242,7 +261,7 @@ def main():
     # Get all courses in the account
     courses = get_all_courses()
     if 'errors' in courses and courses['errors'] is not None:
-        if courses['errors'][0]['message'] == 'Invalid access token.' or courses['errors'][0]['message'] == 'user authorization required':
+        if courses['errors'][0]['message'] == 'Invalid access token.' or courses['errors'][0]['message'] == 'user authorization required' or courses['errors'][0]['message'] == 'Insufficient scopes on access token.':
             new_token = refresh_access_token()
             if new_token is not None:
                 print('Running fetch again...\n')
