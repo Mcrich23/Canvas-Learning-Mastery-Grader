@@ -14,6 +14,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("REFRESH_TOKEN")
 API_TOKEN = os.getenv("API_TOKEN")
+GRADING_ASSIGNMENT_NAME = os.getenv("GRADING_ASSIGNMENT_NAME")
 
 app = Flask(__name__)
 
@@ -268,7 +269,7 @@ def main():
         # Get students in the course
         students = get_students(course_id)
 
-        assignment = get_assignment_by_name(course_id, "Grading Calculator")
+        assignment = get_assignment_by_name(course_id, GRADING_ASSIGNMENT_NAME)
 
         # get allowed list of outcomes
         learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
