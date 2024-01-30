@@ -15,8 +15,8 @@ Automatically grade learning mastery in Canvas
      - Grading Periods
        - `url:GET|/api/v1/courses/:course_id/grading_periods`
      - Outcome Groups Api
-       - `url:GET|/api/v1/accounts/:account_id/outcome_groups/:id/outcomes`
-       - `url:GET|/api/v1/accounts/:account_id/outcome_groups/:id/subgroups`
+       - `url:GET|/api/v1/courses/:courses/outcome_groups/:id/outcomes`
+       - `url:GET|/api/v1/courses/:courses/outcome_groups/:id/subgroups`
        - `url:GET|/api/v1/courses/:course_id/outcome_groups`
      - Outcome Results
        - `url:GET|/api/v1/courses/:course_id/outcome_results`
