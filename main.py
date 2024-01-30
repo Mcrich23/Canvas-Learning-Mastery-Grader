@@ -4,9 +4,8 @@ from dotenv import load_dotenv, set_key
 from flask import Flask, request
 from werkzeug.serving import make_server
 import threading
-import time
-
-import requests
+from datetime import datetime
+import numpy as np
 
 load_dotenv()
 
@@ -143,7 +142,29 @@ def get_students(course_id):
     students = response.json()
     return students
 
+def get_learning_mastery_outcome(course_id, outcome_group_id):
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_groups/{outcome_group_id}/outcomes"
+    response = session.get(url)
+    learning_mastery = response.json()
+    # print(f'Learning Mastery for group {outcome_group_id}: {learning_mastery}')
+    outcome_ids = [outcome['outcome']['id'] for outcome in learning_mastery]
+    return outcome_ids
+
 # Function to get learning mastery scores for an assignment
+def get_learning_mastery_id_list(course_id, group_id):
+    root_url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_groups/{group_id}/subgroups"
+    root_response = session.get(root_url)
+    root_learning_mastery = root_response.json()
+    outcomes = get_learning_mastery_outcome(course_id, group_id) # start with non subgrouped outcomes
+    if root_learning_mastery is not None:
+        for group in root_learning_mastery:
+            new_outcomes = get_learning_mastery_outcome(course_id, group['id'])
+            outcomes.append(new_outcomes)
+    if outcomes is not None:
+        return np.array(outcomes).flatten().tolist()
+    else:
+        return None
+    
 def get_learning_mastery(course_id, student_id):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_results?user_ids={student_id}"
     response = session.get(url)
@@ -155,6 +176,17 @@ def set_grade(course_id, assignment_id, student_id, grade):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/{student_id}?submission[posted_grade]={grade}"
     response = session.put(url)
     return response.status_code
+
+def get_mastery_group_id(course_id, group_name):
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_groups"
+    response = session.get(url)
+    mastery_groups = response.json()
+
+    for group in mastery_groups:
+        if group["title"] == group_name:
+            return group["id"]
+
+    return None
 
 # Function to get assignment ID by name
 def get_assignment_by_name(course_id, assignment_name):
@@ -169,14 +201,40 @@ def get_assignment_by_name(course_id, assignment_name):
     return None
 
 # Function to calculate the average of 'percent' values in learning mastery results
-def calculate_average_percent(learning_mastery):
-    if 'outcome_results' in learning_mastery:
-        results = learning_mastery['outcome_results']
-        if results:
-            percent_values = [result['percent'] for result in results]
-            average_percent = sum(percent_values) / len(percent_values)
-            return average_percent
-    return None
+def calculate_average_percent(results):
+    percent_values = [result['percent'] for result in results]
+    average_percent = sum(percent_values) / len(percent_values)
+    return average_percent
+
+def get_current_grading_period(course_id):
+    # Canvas API URL for grading periods
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/grading_periods"
+
+    # Make a GET request to the Canvas API
+    response = session.get(url)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        grading_periods_data = response.json()
+
+        # Get the current date and time
+        current_datetime = datetime.utcnow()
+
+        # Find the grading period that is currently active
+        for period in grading_periods_data.get('grading_periods', []):
+            start_date = datetime.strptime(period['start_date'], '%Y-%m-%dT%H:%M:%SZ')
+            end_date = datetime.strptime(period['end_date'], '%Y-%m-%dT%H:%M:%SZ')
+
+            if start_date <= current_datetime <= end_date:
+                return period['title']
+
+        # If no active grading period is found, return None
+        return None
+
+    else:
+        # Print an error message if the request was not successful
+        print(f"Failed to fetch grading periods. Status code: {response.status_code}")
+        return None
 
 # Main script
 def main():
@@ -202,10 +260,21 @@ def main():
         course_name = course["name"]
         print(f"Processing course: {course_name}")
 
+        current_period = get_current_grading_period(course_id)
+        print(f"Current grading period: {current_period}")
+
+        print('')
+
+        mastery_group = get_mastery_group_id(course_id, current_period)
+        print(f"Mastery group ID: {mastery_group}")
         # Get students in the course
         students = get_students(course_id)
 
         assignment = get_assignment_by_name(course_id, "Grading Calculator")
+
+        # get allowed list of outcomes
+        learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
+        print(learning_mastery_id_list)
         if assignment is not None:
             # You can customize the assignment ID based on your needs
             ASSIGNMENT_ID = assignment['id']
@@ -218,9 +287,11 @@ def main():
                 user_name = student["name"]
 
                 # # Get learning mastery scores for the assignment
-                learning_mastery = get_learning_mastery(course_id, user_id)
+                all_learning_mastery = get_learning_mastery(course_id, user_id)['outcome_results']
+                # Filter learning_mastery to only include objects with IDs in learning_mastery_id_list
+                learning_mastery = [outcome for outcome in all_learning_mastery if outcome['id'] in learning_mastery_id_list]
+                print(learning_mastery)
 
-                # print(learning_mastery)
                 average_percent = calculate_average_percent(learning_mastery)
                 print(f'{user_name}\'s learning mastery average percent: {average_percent}')
 
