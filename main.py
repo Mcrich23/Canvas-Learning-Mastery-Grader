@@ -297,6 +297,7 @@ def main():
                         print(f"Grade updated for {user_name} in course {course_name}")
                     else:
                         print(f"Failed to update grade for {user_name} in course {course_name}")
+                print('')
         else:
             print(f"Assignment not found in course {course_name}")
 
