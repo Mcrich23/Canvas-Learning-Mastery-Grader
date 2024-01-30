@@ -6,6 +6,7 @@ from werkzeug.serving import make_server
 import threading
 from datetime import datetime
 import numpy as np
+import urllib
 
 load_dotenv()
 
@@ -28,8 +29,8 @@ scopes = [
     "url:GET|/api/v1/courses",
     "url:GET|/api/v1/courses/:course_id/students",
     "url:GET|/api/v1/courses/:course_id/grading_periods",
-    "url:GET|/api/v1/accounts/:account_id/outcome_groups/:id/outcomes",
-    "url:GET|/api/v1/accounts/:account_id/outcome_groups/:id/subgroups",
+    "url:GET|/api/v1/courses/:course_id/outcome_groups/:id/outcomes",
+    "url:GET|/api/v1/courses/:course_id/outcome_groups/:id/subgroups",
     "url:GET|/api/v1/courses/:course_id/outcome_groups",
     "url:GET|/api/v1/courses/:course_id/outcome_results",
     "url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id"
@@ -97,14 +98,13 @@ def refresh_access_token():
 
     auth_url = f"{CANVAS_API_URL}/login/oauth2/auth"
     token_url = f"{CANVAS_API_URL}/login/oauth2/token"
-
-    scope_string = " ".join(scopes)
-    print(f"Scope string: {scope_string}")
     
     # If refresh token is not available, perform the full OAuth2 flow
     print(f'REFRESH_TOKEN: {REFRESH_TOKEN}')
     if REFRESH_TOKEN is None or REFRESH_TOKEN == "" or REFRESH_TOKEN == "<REFRESH_TOKEN>":
-        auth_code_url = f"{auth_url}?client_id={CLIENT_ID}&response_type=code&redirect_uri=http://127.0.0.1:5005/oauth/callback"
+        scope_string = " ".join(scopes)
+        scope_encoded = urllib.parse.quote(scope_string)
+        auth_code_url = f"{auth_url}?client_id={CLIENT_ID}&scope={scope_encoded}&response_type=code&redirect_uri=http://127.0.0.1:5005/oauth/callback"
         print(f"Open the following URL in your browser to continue authorization:\n{auth_code_url}")
 
         # Start the Flask server in a separate thread
