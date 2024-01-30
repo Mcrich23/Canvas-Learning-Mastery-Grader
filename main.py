@@ -132,7 +132,6 @@ def get_all_courses():
     url = f"{CANVAS_API_URL}/api/v1/courses"
     response = session.get(url)
     courses = response.json()
-    # print(courses)
     return courses
 
 # Function to get all students in a course
@@ -147,7 +146,7 @@ def get_learning_mastery_outcome(course_id, outcome_group_id):
     response = session.get(url)
     learning_mastery = response.json()
     # print(f'Learning Mastery for group {outcome_group_id}: {learning_mastery}')
-    outcome_ids = [outcome['outcome']['id'] for outcome in learning_mastery]
+    outcome_ids = [outcome['outcome']['id']+1 for outcome in learning_mastery]
     return outcome_ids
 
 # Function to get learning mastery scores for an assignment
@@ -278,11 +277,9 @@ def main():
         if assignment is not None:
             # You can customize the assignment ID based on your needs
             ASSIGNMENT_ID = assignment['id']
-            # print(ASSIGNMENT_ID)
 
             # # Calculate and set grades for the assignment
             for student in students:
-                # print(student)
                 user_id = student["id"]
                 user_name = student["name"]
 
@@ -290,7 +287,6 @@ def main():
                 all_learning_mastery = get_learning_mastery(course_id, user_id)['outcome_results']
                 # Filter learning_mastery to only include objects with IDs in learning_mastery_id_list
                 learning_mastery = [outcome for outcome in all_learning_mastery if outcome['id'] in learning_mastery_id_list]
-                print(learning_mastery)
 
                 average_percent = calculate_average_percent(learning_mastery)
                 print(f'{user_name}\'s learning mastery average percent: {average_percent}')
