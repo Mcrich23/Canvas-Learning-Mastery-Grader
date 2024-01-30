@@ -265,7 +265,6 @@ def main():
         print('')
 
         mastery_group = get_mastery_group_id(course_id, current_period)
-        print(f"Mastery group ID: {mastery_group}")
         # Get students in the course
         students = get_students(course_id)
 
@@ -273,7 +272,6 @@ def main():
 
         # get allowed list of outcomes
         learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
-        print(learning_mastery_id_list)
         if assignment is not None:
             # You can customize the assignment ID based on your needs
             ASSIGNMENT_ID = assignment['id']
