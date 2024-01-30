@@ -205,10 +205,10 @@ def main():
         # Get students in the course
         students = get_students(course_id)
 
-        assignment = get_assignment_by_name(course_id, "Test")
-        # You can customize the assignment ID based on your needs
-        ASSIGNMENT_ID = assignment['id']
-        if ASSIGNMENT_ID is not None:
+        assignment = get_assignment_by_name(course_id, "Grading Calculator")
+        if assignment is not None:
+            # You can customize the assignment ID based on your needs
+            ASSIGNMENT_ID = assignment['id']
             # print(ASSIGNMENT_ID)
 
             # # Calculate and set grades for the assignment
