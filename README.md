@@ -22,6 +22,7 @@ Automatically grade learning mastery in Canvas
        - `url:GET|/api/v1/courses/:course_id/outcome_results`
      - Submissions Api
        - `url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id`
+       - `url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id`
 4. Copy `.env.example` to `.env` and adjust it accordingly
    - `CANVAS_API_URL` is the base url of your canvas instance (ie. `https://example.instructure.com`)
    - `CLIENT_ID` is the non-hidden api number on Canvas (ie. `10000000000001`)

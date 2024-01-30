@@ -33,7 +33,8 @@ scopes = [
     "url:GET|/api/v1/courses/:course_id/outcome_groups/:id/subgroups",
     "url:GET|/api/v1/courses/:course_id/outcome_groups",
     "url:GET|/api/v1/courses/:course_id/outcome_results",
-    "url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id"
+    "url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id",
+    "url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id"
 ]
 
 @app.route("/oauth/callback")
@@ -196,6 +197,12 @@ def set_grade(course_id, assignment_id, student_id, grade):
     response = session.put(url)
     return response.status_code
 
+# Function to set grades for an assignment
+def get_grade(course_id, assignment_id, student_id):
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/assignments/{assignment_id}/submissions/{student_id}"
+    response = session.get(url)
+    return response.json()['entered_grade']
+
 def get_mastery_group_id(course_id, group_name):
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_groups"
     response = session.get(url)
@@ -311,12 +318,16 @@ def main():
 
                 if average_percent is not None:
                     final_grade = average_percent*4
-                    updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, final_grade)
-
-                    if updated_grade == 200:
-                        print(f"Grade updated for {user_name} in course {course_name}")
+                    current_grade = get_grade(course_id, ASSIGNMENT_ID, user_id)
+                    if current_grade is not None and f'{current_grade}' == f'{final_grade}':
+                        print(f"Grade already up to date for {user_name} in course {course_name}")
                     else:
-                        print(f"Failed to update grade for {user_name} in course {course_name}")
+                        updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, final_grade)
+
+                        if updated_grade == 200:
+                            print(f"Grade updated for {user_name} in course {course_name}")
+                        else:
+                            print(f"Failed to update grade for {user_name} in course {course_name}")
                 print('')
         else:
             print(f"Assignment not found in course {course_name}")
