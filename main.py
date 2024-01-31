@@ -295,6 +295,7 @@ def main():
         students = get_students(course_id)
 
         assignment = get_assignment_by_name(course_id, GRADING_ASSIGNMENT_NAME)
+        max_assignment_points = assignment['points_possible']
 
         # get allowed list of outcomes
         learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
@@ -318,7 +319,7 @@ def main():
                     average_percent = calculate_average_percent(learning_mastery)
 
                     if average_percent is not None:
-                        final_grade = average_percent*4
+                        final_grade = average_percent*max_assignment_points
                         current_grade = get_grade(course_id, ASSIGNMENT_ID, user_id)
                         if current_grade is not None and f'{current_grade}' == f'{final_grade}':
                             print(f"Grade already up to date for {user_name} in course {course_name}")
