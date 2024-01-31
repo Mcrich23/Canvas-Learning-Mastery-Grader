@@ -6,7 +6,7 @@ Automatically grade learning mastery in Canvas
 1. Clone/Download this repo
 2. Go to Canvas and generate an Oauth Api Token
    - Enter in `http://127.0.0.1:5005/oauth/callback` as a URI Redirect
-   - Add the following scopes:
+   - If you choose to enforce scopes, enable the following:
      - Assignments Api
        - `url:GET|/api/v1/courses/:course_id/assignments`
      - Courses
