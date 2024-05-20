@@ -7,6 +7,7 @@ import threading
 from datetime import datetime
 import numpy as np
 import urllib
+import json
 
 load_dotenv()
 
@@ -30,6 +31,7 @@ scopes = [
     "url:GET|/api/v1/courses/:course_id/students",
     "url:GET|/api/v1/courses/:course_id/grading_periods",
     "url:GET|/api/v1/courses/:course_id/outcome_groups/:id/outcomes",
+    "url:GET|/api/v1/courses/:course_id/outcome_rollups",
     "url:GET|/api/v1/courses/:course_id/outcome_groups/:id/subgroups",
     "url:GET|/api/v1/courses/:course_id/outcome_groups",
     "url:GET|/api/v1/courses/:course_id/outcome_results",
@@ -185,7 +187,7 @@ def get_learning_mastery_id_list(course_id, group_id):
         return None
     
 def get_learning_mastery(course_id, student_id):
-    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_results?user_ids={student_id}"
+    url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/outcome_rollups?user_ids={student_id}"
     response = session.get(url)
     learning_mastery = response.json()
     return learning_mastery
@@ -310,24 +312,25 @@ def main():
                 user_name = student["name"]
 
                 # # Get learning mastery scores for the assignment
-                all_learning_mastery = get_learning_mastery(course_id, user_id)['outcome_results']
-                # Filter learning_mastery to only include objects with IDs in learning_mastery_id_list
-                learning_mastery = [outcome for outcome in all_learning_mastery if outcome['links']['learning_outcome'] in learning_mastery_id_list]
+                learning_mastery_rollups = get_learning_mastery(course_id, user_id)["rollups"]
+                learning_mastery = [score for rollup in learning_mastery_rollups for score in rollup['scores']]
+                # print(f"ALL Learning Mastery for {user_name} in course {course_name}: {json.dumps(all_learning_mastery, indent=4)}")
+
                 if len(learning_mastery) == 0:
                     print(f'No learning mastery for {user_name} in course {course_name}')
                 else:
-                    average_percent = calculate_average_percent(learning_mastery)
+                    all_scores = [score['score'] for score in learning_mastery if 'score' in score]
+                    average_score = sum(all_scores) / len(all_scores) if all_scores else 0
 
-                    if average_percent is not None:
-                        final_grade = average_percent*max_assignment_points
+                    if average_score is not None:
                         current_grade = get_grade(course_id, ASSIGNMENT_ID, user_id)
-                        if current_grade is not None and f'{current_grade}' == f'{final_grade}':
+                        if current_grade is not None and f'{current_grade}' == f'{average_score}':
                             print(f"Grade already up to date for {user_name} in course {course_name}")
                         else:
-                            updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, final_grade)
+                            updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, average_score)
 
                             if updated_grade == 200:
-                                print(f"Grade updated for {user_name} in course {course_name}")
+                                print(f"Grade updated for {user_name} in course {course_name} with {average_score}")
                             else:
                                 print(f"Failed to update grade for {user_name} in course {course_name}")
                     print('')
