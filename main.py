@@ -35,6 +35,7 @@ scopes = [
     "url:GET|/api/v1/courses/:course_id/outcome_groups/:id/subgroups",
     "url:GET|/api/v1/courses/:course_id/outcome_groups",
     "url:GET|/api/v1/courses/:course_id/outcome_results",
+    "url:GET|/api/v1/outcomes/:id",
     "url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id",
     "url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id"
 ]
@@ -257,6 +258,17 @@ def get_current_grading_period(course_id):
         print(f"Failed to fetch grading periods. Status code: {response.status_code}")
         return None
 
+def get_outcome_details(outcome_id):
+    url = f"{CANVAS_API_URL}/api/v1/outcomes/{outcome_id}"
+    response = session.get(url)
+    outcome = response.json()
+    return outcome
+
+def get_outcome_percentage(raw_score, outcome_id):
+    outcome_details = get_outcome_details(outcome_id)
+    max_score = outcome_details['points_possible']
+    return raw_score/max_score
+
 # Main script
 def main():
     session.headers = {"Authorization": f"Bearer {API_TOKEN}"}
@@ -296,6 +308,7 @@ def main():
         # get allowed list of outcomes
         learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
         learning_mastery_id_list = [str(outcome_id) for outcome_id in learning_mastery_id_list]
+
         if assignment is not None:
             # You can customize the assignment ID based on your needs
             ASSIGNMENT_ID = assignment['id']
@@ -308,19 +321,29 @@ def main():
                 # # Get learning mastery scores for the assignment
                 learning_mastery_rollups = get_learning_mastery(course_id, user_id)["rollups"]
                 learning_mastery = [score for rollup in learning_mastery_rollups for score in rollup['scores']]
-                # print(f"ALL Learning Mastery for {user_name} in course {course_name}: {json.dumps(all_learning_mastery, indent=4)}")
 
                 if len(learning_mastery) == 0:
+                    # Do nothing if there are no learning mastery scores
                     print(f'No learning mastery for {user_name} in course {course_name}')
                 else:
-                    all_scores = [score['score'] for score in learning_mastery if 'score' in score]
-                    average_score = sum(all_scores) / len(all_scores) if all_scores else 0
+
+                    # Get score percentages for each outcome
+                    all_score_percentages = [get_outcome_percentage(score['score'], score["links"]["outcome"]) for score in learning_mastery if 'score' in score]
+                    
+                    # Calculate the average score percentage
+                    average_score_percentage = sum(all_score_percentages) / len(all_score_percentages) if all_score_percentages else 0
+                    
+                    # Convert the average score percentage to the actual score
+                    average_score = average_score_percentage * max_assignment_points
 
                     if average_score is not None:
+                        # Check if the current grade is the same as the calculated grade
                         current_grade = get_grade(course_id, ASSIGNMENT_ID, user_id)
                         if current_grade is not None and f'{current_grade}' == f'{average_score}':
+                            # Do nothing if the grade is already up to date
                             print(f"Grade already up to date for {user_name} in course {course_name}")
                         else:
+                            # Set the grade for the assignment if it is different
                             updated_grade = set_grade(course_id, ASSIGNMENT_ID, user_id, average_score)
 
                             if updated_grade == 200:
