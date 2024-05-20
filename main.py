@@ -11,6 +11,7 @@ import json
 
 load_dotenv()
 
+# Load environment variables
 CANVAS_API_URL = os.getenv("CANVAS_API_URL")
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
@@ -25,6 +26,7 @@ callback_done = False
 server = None
 session = requests.Session()
 
+# List of scopes required for the Canvas API
 scopes = [
     "url:GET|/api/v1/courses/:course_id/assignments",
     "url:GET|/api/v1/courses",
@@ -40,6 +42,7 @@ scopes = [
     "url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id"
 ]
 
+# Function to handle the OAuth callback
 @app.route("/oauth/callback")
 def oauth_callback():
     global callback_done, API_TOKEN, REFRESH_TOKEN
