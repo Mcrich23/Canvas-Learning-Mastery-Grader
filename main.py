@@ -259,14 +259,20 @@ def get_current_grading_period(course_id):
         return None
 
 def get_outcome_details(outcome_id):
+    # Get outcome details for id
     url = f"{CANVAS_API_URL}/api/v1/outcomes/{outcome_id}"
     response = session.get(url)
     outcome = response.json()
     return outcome
 
 def get_outcome_percentage(raw_score, outcome_id):
+    # Get outcome details
     outcome_details = get_outcome_details(outcome_id)
+
+    # Get the maximum score for the outcome
     max_score = outcome_details['points_possible']
+
+    # Return the fraction of the raw score to the maximum score
     return raw_score/max_score
 
 # Main script
@@ -298,11 +304,14 @@ def main():
 
         print('')
 
+        # Get the mastery group ID
         mastery_group = get_mastery_group_id(course_id, current_period)
         # Get students in the course
         students = get_students(course_id)
 
+        # Get the grading calculator assignment
         assignment = get_assignment_by_name(course_id, GRADING_ASSIGNMENT_NAME)
+        # Get the maximum points for the grading calculator assignment
         max_assignment_points = assignment['points_possible']
 
         # get allowed list of outcomes
