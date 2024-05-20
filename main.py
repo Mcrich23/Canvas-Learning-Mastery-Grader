@@ -227,12 +227,6 @@ def get_assignment_by_name(course_id, assignment_name):
 
     return None
 
-# Function to calculate the average of 'percent' values in learning mastery results
-def calculate_average_percent(results):
-    percent_values = [result['percent'] for result in results]
-    average_percent = sum(percent_values) / len(percent_values)
-    return average_percent
-
 def get_current_grading_period(course_id):
     # Canvas API URL for grading periods
     url = f"{CANVAS_API_URL}/api/v1/courses/{course_id}/grading_periods"
