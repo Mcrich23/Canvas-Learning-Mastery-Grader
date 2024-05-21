@@ -20,6 +20,7 @@ Automatically grade learning mastery in Canvas
        - `url:GET|/api/v1/courses/:course_id/outcome_groups`
      - Outcome Results
        - `url:GET|/api/v1/courses/:course_id/outcome_results`
+       - `url:GET|/api/v1/courses/:course_id/outcome_rollups`
      - Submissions Api
        - `url:PUT|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id`
        - `url:GET|/api/v1/courses/:course_id/assignments/:assignment_id/submissions/:user_id`
