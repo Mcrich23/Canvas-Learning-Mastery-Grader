@@ -2,6 +2,13 @@
  
 Automatically grade learning mastery in Canvas
 
+## How it Works
+
+1. It gets all courses the authenticated user has access to
+2. Then it searches for an assignment containing the `GRADING_ASSIGNMENT_NAME` environment variable
+3. For each course that contains this, it iterates over every student in the course geting their outcome grades and generating percentages for each outcome
+4. It averages those percentages and sets the grading assignments grade based on the scale of its maximum points
+
 ## Setup
 1. Clone/Download this repo
 2. Go to Canvas and generate an Oauth Api Token
