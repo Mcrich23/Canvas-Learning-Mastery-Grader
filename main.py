@@ -268,16 +268,6 @@ def get_outcome_details(outcome_id):
     outcome = response.json()
     return outcome
 
-def get_outcome_percentage(raw_score, outcome_id):
-    # Get outcome details
-    outcome_details = get_outcome_details(outcome_id)
-
-    # Get the maximum score for the outcome
-    max_score = outcome_details['points_possible']
-
-    # Return the fraction of the raw score to the maximum score
-    return raw_score/max_score
-
 # Main script
 def main():
     session.headers = {"Authorization": f"Bearer {API_TOKEN}"}
@@ -320,6 +310,21 @@ def main():
         # get allowed list of outcomes
         learning_mastery_id_list = get_learning_mastery_id_list(course_id, mastery_group)
         learning_mastery_id_list = [str(outcome_id) for outcome_id in learning_mastery_id_list]
+        learning_outcomes = [get_outcome_details(outcome_id) for outcome_id in learning_mastery_id_list]
+
+        def get_outcome_percentage(raw_score, outcome_id):
+            # Get outcome details
+            outcome_details = next((outcome for outcome in learning_outcomes if outcome['id'] == int(outcome_id)), None)
+
+            if outcome_details is None:
+                print(f'Outcome details not found for outcome ID {outcome_id}')
+                return None
+
+            # Get the maximum score for the outcome
+            max_score = outcome_details['points_possible']
+
+            # Return the fraction of the raw score to the maximum score
+            return raw_score/max_score
 
         if assignment is not None:
             # You can customize the assignment ID based on your needs
@@ -340,8 +345,8 @@ def main():
                 else:
 
                     # Get score percentages for each outcome
-                    all_score_percentages = [get_outcome_percentage(score['score'], score["links"]["outcome"]) for score in learning_mastery if 'score' in score]
-                    
+                    all_score_percentages = [get_outcome_percentage(score['score'], score["links"]["outcome"]) for score in learning_mastery if 'score' in score and get_outcome_percentage(score['score'], score["links"]["outcome"]) is not None]
+
                     # Calculate the average score percentage
                     average_score_percentage = sum(all_score_percentages) / len(all_score_percentages) if all_score_percentages else 0
                     
