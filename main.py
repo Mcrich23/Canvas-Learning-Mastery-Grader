@@ -226,7 +226,7 @@ def get_assignment_by_name(course_id, assignment_name):
     assignments = response.json()
 
     for assignment in assignments:
-        if assignment_name in assignment["name"]:
+        if assignment["name"] == assignment_name:
             return assignment
 
     return None
