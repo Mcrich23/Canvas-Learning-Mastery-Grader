@@ -16,8 +16,8 @@ Enter this simple GitHub repository. **Canvas-Learning-Mastery-Grader** is a set
 4. It averages those percentages and sets the grading assignments grade based on the scale of its maximum points
 
 ## Setup
-0. Setup an instance of Canvas (if you haven't already)
-   - You can use the community version [here](https://github.com/instructure/canvas-lms/wiki/Quick-Start)
+If you don't have an instance of Canvas, you can setup one here [here](https://github.com/instructure/canvas-lms/wiki/Quick-Start)
+
 1. Clone/Download this repo
 2. Go to Canvas and generate an Oauth Api Token
    - Enter in `http://127.0.0.1:5005/oauth/callback` as a URI Redirect
