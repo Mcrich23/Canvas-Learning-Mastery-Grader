@@ -4,8 +4,7 @@ Automatically grade learning mastery in Canvas
 
 ## Why is this important?
 
-Canvas by Instructure has two modes for grading: Letter Based Grading (LBG), and Standards Based Grading (SBG). Standards Based Grading has many benifits such as grading students on an objective standard to completely judge the ability and performance of students on their performance indtead of anything else. However, there is one major issue; Canvas is unable to transform this grade diectly into a letter grade for students to easily view. Enter this simple GitHub repository. Canvas-Learning-Mastery-Grader is a set of python scripts to automatically handle just this. Simply follow [#Setup](#setup) to get started and start accurately reflecting students grades in near realtime. 
-
+Canvas by Instructure has two modes for grading: Letter Based Grading (LBG), and Standards Based Grading (SBG). Standards Based Grading has many benifits such as grading students on an objective standard to completely judge the ability and performance of students on their performance indtead of anything else. However, there is one major issue; Canvas is unable to transform this grade diectly into a letter grade for students to easily view. Enter this simple GitHub repository. Canvas-Learning-Mastery-Grader is a set of python scripts to automatically handle just this. Simply follow [Setup](#setup) to get started and start accurately reflecting students grades in near realtime. 
 
 ## How it Works
 
